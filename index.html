@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+ <title>Combination Lock Practice</title>
+ <style>
+ * { box-sizing: border-box; }
+ body {
+ max-width: 520px;
+ margin: 0 auto;
+ padding: 18px;
+ font-family: system-ui, -apple-system, sans-serif;
+ text-align: center;
+ color: #1e293b;
+ background: #eef2f7;
+ }
+ h1 { margin: 5px 0; font-size: 28px; }.subtitle { margin-top: 5px; color: #475569; }.card {
+ margin-top: 18px;
+ padding: 22px;
+ background: white;
+ border-radius: 22px;
+ box-shadow: 0 5px 18px rgba(0, 0, 0, 0.1);
+ }.config-section {
+ display: flex;
+ flex-direction: column;
+ gap: 12px;
+ margin-bottom: 15px;
+ padding: 12px;
+ background: #f1f5f9;
+ border-radius: 12px;
+ }.input-group {
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ gap: 8px;
+ flex-wrap: wrap;
+ }.input-group label { font-weight: 700; font-size: 14px; color: #334155; }.input-group input {
+ width: 55px;
+ padding: 6px;
+ font-size: 18px;
+ text-align: center;
+ border: 2px solid #94a3b8;
+ border-radius: 8px;
+ }.help { margin: 10px 0 5px; color: #475569; font-size: 14px; }
+
+ #dialArea {
+ position: relative;
+ width: 280px;
+ height: 280px;
+ margin: 18px auto 14px;
+ touch-action: none;
+ cursor: grab;
+ user-select: none;
+ -webkit-user-select: none;
+ outline: none;
+ }
+ #dialArea.dragging { cursor: grabbing; }
+ #indicator {
+ position: absolute;
+ top: -8px;
+ left: 50%;
+ z-index: 20;
+ width: 0;
+ height: 0;
+ transform: translateX(-50%);
+ border-left: 13px solid transparent;
+ border-right: 13px solid transparent;
+ border-top: 24px solid #ef4444;
+ }
+ #dial {
+ position: absolute;
+ inset: 10px;
+ border: 7px solid #172033;
+ border-radius: 50%;
+ background: repeating-conic-gradient(
+ from -0.5deg,
+ #f8fafc 0deg 1deg,
+ #64748b 1deg 2deg,
+ #f8fafc 2deg 9deg
+ );
+ box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25), inset 0 0 0 9px #cbd5e1, inset 0 0 0 12px #475569;
+ }
+ #dial.smooth { transition: transform 0.12s ease-out; }.number {
+ position: absolute;
+ top: 50%;
+ left: 50%;
+ width: 34px;
+ height: 24px;
+ margin-left: -17px;
+ margin-top: -12px;
+ font-weight: 800;
+ font-size: 15px;
+ color: #172033;
+ line-height: 24px;
+ }
+ #centerCap {
+ position: absolute;
+ top: 50%;
+ left: 50%;
+ z-index: 10;
+ width: 125px;
+ height: 125px;
+ transform: translate(-50%, -50%);
+ display: flex;
+ flex-direction: column;
+ justify-content: center;
+ border: 7px solid #0f172a;
+ border-radius: 50%;
+ color: white;
+ background: #334155;
+ box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.45);
+ pointer-events: none;
+ }
+ #currentNumber { font-size: 46px; font-weight: 800; line-height: 1; }
+ #direction { min-height: 18px; margin-top: 5px; font-size: 13px; color: #dbeafe; }.button-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+ button {
+ min-height: 44px;
+ padding: 8px 14px;
+ border: none;
+ border-radius: 10px;
+ color: white;
+ background: #2563eb;
+ font-size: 15px;
+ font-weight: 700;
+ cursor: pointer;
+ }
+ button:active { transform: scale(0.98); }.small-button { background: #64748b; }.check-button { width: 100%; margin-top: 6px; background: #16a34a; font-size: 18px; }
+ #status {
+ min-height: 60px;
+ margin-top: 12px;
+ padding: 12px;
+ border-radius: 12px;
+ background: #eff6ff;
+ color: #1e3a8a;
+ font-size: 17px;
+ font-weight: 700;
+ line-height: 1.4;
+ }
+ #status.success { color: #14532d; background: #dcfce7; }
+ #status.error { color: #7f1d1d; background: #fee2e2; }.reset-button { margin-top: 10px; background: #475569; }
+ </style>
+</head>
+<body>
+ <h1>🔒 Lock Practice</h1>
+ <p class="subtitle">Customize rules and practice opening the lock</p>
+
+ <main class="card">
+ <div class="config-section">
+ <div class="input-group">
+ <label>Combo:</label>
+ <input id="number1" type="number" min="0" max="39" value="20">
+ <span>–</span>
+ <input id="number2" type="number" min="0" max="39" value="10">
+ <span>–</span>
+ <input id="number3" type="number" min="0" max="39" value="30">
+ </div>
+ <div class="input-group">
+ <label for="rotations1">Step 1 Right Turns:</label>
+ <input id="rotations1" type="number" min="1" max="10" value="3">
+ <label for="rotations2">Step 2 Left Turns:</label>
+ <input id="rotations2" type="number" min="0" max="10" value="1">
+ </div>
+ </div>
+
+ <p class="help">Spin using touch, mouse, or buttons below.</p>
+
+ <div id="dialArea" tabindex="0">
+ <div id="indicator"></div>
+ <div id="dial"></div>
+ <div id="centerCap">
+ <div id="currentNumber">0</div>
+ <div id="direction">Drag the dial</div>
+ </div>
+ </div>
+
+ <div class="button-row">
+ <button class="small-button" id="left10">↺ Left 10</button>
+ <button id="left1">↺ Left 1</button>
+ <button id="right1">Right 1 ↻</button>
+ <button class="small-button" id="right10">Right 10 ↻</button>
+ </div>
+
+ <button class="check-button" id="checkButton">Check Step</button>
+ <div id="status">Step 1: Turn RIGHT at least 3 full turns, then stop at the 1st number.</div>
+ <button class="reset-button" id="resetButton">Start Over</button>
+ </main>
+
+ <script>
+ const dialArea = document.getElementById("dialArea");
+ const dial = document.getElementById("dial");
+ const currentNumber = document.getElementById("currentNumber");
+ const directionText = document.getElementById("direction");
+ const statusBox = document.getElementById("status");
+ const numberInputs = [
+ document.getElementById("number1"),
+ document.getElementById("number2"),
+ document.getElementById("number3")
+ ];
+ const rotInput1 = document.getElementById("rotations1");
+ const rotInput2 = document.getElementById("rotations2");
+
+ const degreesPerNumber = 360 / 40;
+ let totalDegrees = 0;
+ let stageDegrees = 0;
+ let currentValue = 0;
+ let step = 0;
+ let dragging = false;
+ let previousPointerAngle = 0;
+
+ for (let number = 0; number < 40; number += 5) {
+ const label = document.createElement("div");
+ label.className = "number";
+ label.textContent = number;
+ const angle = -number * degreesPerNumber;
+ label.style.transform = `rotate(${angle}deg) translateY(-100px) rotate(${-angle}deg)`;
+ dial.appendChild(label);
+ }
+
+ function positiveModulo(number, divisor) {
+ return ((number % divisor) + divisor) % divisor;
+ }
+
+ function getCombination() {
+ return numberInputs.map(input => Math.max(0, Math.min(39, parseInt(input.value, 10) || 0)));
+ }
+
+ function getRotations() {
+ return {
+ r1: Math.max(1, parseInt(rotInput1.value, 10) || 3),
+ r2: Math.max(0, parseInt(rotInput2.value, 10) || 1)
+ };
+ }
+
+ function updateDisplay() {
+ currentValue = positiveModulo(Math.round(totalDegrees / degreesPerNumber), 40);
+ dial.style.transform = `rotate(${totalDegrees}deg)`;
+ currentNumber.textContent = currentValue;
+ }
+
+ function showStatus(message, type = "") {
+ statusBox.textContent = message;
+ statusBox.className = type;
+ }
+
+ function moveDialByDegrees(degrees) {
+ totalDegrees += degrees;
+ stageDegrees += degrees;
+ if (degrees > 0) directionText.textContent = "Turning RIGHT ↻";
+ else if (degrees < 0) directionText.textContent = "↺ Turning LEFT";
+ updateDisplay();
+ }
+
+ function moveDialByNumbers(amount) {
+ dial.classList.add("smooth");
+ moveDialByDegrees(amount * degreesPerNumber);
+ setTimeout(() => dial.classList.remove("smooth"), 140);
+ }
+
+ function pointerAngle(event) {
+ const rect = dialArea.getBoundingClientRect();
+ const x = event.clientX - (rect.left + rect.width / 2);
+ const y = event.clientY - (rect.top + rect.height / 2);
+ return Math.atan2(y, x) * 180 / Math.PI;
+ }
+
+ function beginDrag(event) {
+ dragging = true;
+ previousPointerAngle = pointerAngle(event);
+ dialArea.classList.add("dragging");
+ dial.classList.remove("smooth");
+ dialArea.setPointerCapture(event.pointerId);
+ event.preventDefault();
+ }
+
+ function continueDrag(event) {
+ if (!dragging) return;
+ const newAngle = pointerAngle(event);
+ let diff = newAngle - previousPointerAngle;
+ if (diff > 180) diff -= 360;
+ else if (diff < -180) diff += 360;
+ moveDialByDegrees(diff);
+ previousPointerAngle = newAngle;
+ event.preventDefault();
+ }
+
+ function endDrag(event) {
+ if (!dragging) return;
+ dragging = false;
+ dialArea.classList.remove("dragging");
+ directionText.textContent = `Stopped at ${currentValue}`;
+ if (dialArea.hasPointerCapture(event.pointerId)) {
+ dialArea.releasePointerCapture(event.pointerId);
+ }
+ }
+
+ dialArea.addEventListener("pointerdown", beginDrag);
+ dialArea.addEventListener("pointermove", continueDrag);
+ dialArea.addEventListener("pointerup", endDrag);
+ dialArea.addEventListener("pointercancel", endDrag);
+
+ document.getElementById("right1").onclick = () => moveDialByNumbers(1);
+ document.getElementById("right10").onclick = () => moveDialByNumbers(10);
+ document.getElementById("left1").onclick = () => moveDialByNumbers(-1);
+ document.getElementById("left10").onclick = () => moveDialByNumbers(-10);
+
+ function checkStep() {
+ const [first, second, third] = getCombination();
+ const { r1, r2 } = getRotations();
+ const stageTurns = stageDegrees / 360;
+
+ if (step === 0) {
+ if (currentValue === first && stageTurns >= r1) {
+ step = 1;
+ stageDegrees = 0;
+ showStatus(`Great! Step 2: Turn LEFT ${r2} full turn(s) past ${first}, then stop at ${second}.`, "success");
+ } else if (currentValue!== first) {
+ showStatus(`Not quite. Keep turning RIGHT and stop at ${first}.`, "error");
+ } else {
+ showStatus(`You found ${first}, but make at least ${r1} full turn(s) RIGHT first.`, "error");
+ }
+ return;
+ }
+
+ if (step === 1) {
+ const extraDistance = positiveModulo(first - second, 40);
+ const requiredLeftNumbers = (r2 * 40) + extraDistance;
+ const traveledLeftNumbers = -stageDegrees / degreesPerNumber;
+
+ if (currentValue === second && traveledLeftNumbers >= requiredLeftNumbers - 0.5) {
+ step = 2;
+ stageDegrees = 0;
+ showStatus(`Excellent! Step 3: Turn RIGHT directly to ${third}.`, "success");
+ } else if (currentValue!== second) {
+ showStatus(`Keep turning LEFT past ${first} and stop on ${second}.`, "error");
+ } else {
+ showStatus(`You reached ${second} too soon. Turn left at least ${r2} full rotation(s) past ${first}.`, "error");
+ }
+ return;
+ }
+
+ if (step === 2) {
+ const requiredRightDistance = positiveModulo(third - second, 40) || 40;
+ const traveledRightNumbers = stageDegrees / degreesPerNumber;
+
+ if (currentValue === third && traveledRightNumbers >= requiredRightDistance - 0.5) {
+ step = 3;
+ showStatus("🎉 Unlocked! Great job! Pull the shackle!", "success");
+ } else {
+ showStatus(`Turn RIGHT directly to ${third}, then check again.`, "error");
+ }
+ return;
+ }
+
+ showStatus("🎉 Lock already open! Click Start Over to try again.", "success");
+ }
+
+ function resetLock() {
+ totalDegrees = 0;
+ stageDegrees = 0;
+ currentValue = 0;
+ step = 0;
+ dragging = false;
+ dial.classList.add("smooth");
+ updateDisplay();
+ directionText.textContent = "Drag the dial";
+ const { r1 } = getRotations();
+ showStatus(`Step 1: Turn RIGHT at least ${r1} full turn(s), then stop at the first number.`);
+ setTimeout(() => dial.classList.remove("smooth"), 140);
+ }
+
+ document.getElementById("checkButton").onclick = checkStep;
+ document.getElementById("resetButton").onclick = resetLock;
+ [...numberInputs, rotInput1, rotInput2].forEach(i => i.addEventListener("change", resetLock));
+ updateDisplay();
+ </script>
+</body>
+</html>
