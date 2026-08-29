@@ -163,6 +163,10 @@
  </div>
  </div>
 
+ <div class="button-row">
+  <button id="randomButton">🎲 Random Combination</button>
+ </div>
+
  <p class="help">Spin using touch, mouse, or buttons below.</p>
 
  <div id="dialArea" tabindex="0">
@@ -355,6 +359,13 @@
  showStatus("🎉 Lock already open! Click Start Over to try again.", "success");
  }
 
+ function setRandomCombination() {
+  numberInputs.forEach(input => {
+   input.value = Math.floor(Math.random() * 40);
+  });
+  resetLock();
+ }
+
  function resetLock() {
  totalDegrees = 0;
  stageDegrees = 0;
@@ -371,6 +382,7 @@
 
  document.getElementById("checkButton").onclick = checkStep;
  document.getElementById("resetButton").onclick = resetLock;
+ document.getElementById("randomButton").onclick = setRandomCombination;
  [...numberInputs, rotInput1, rotInput2].forEach(i => i.addEventListener("change", resetLock));
  updateDisplay();
  </script>
